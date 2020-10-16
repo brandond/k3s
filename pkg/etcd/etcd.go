@@ -52,10 +52,10 @@ const (
 	endpoint       = "https://127.0.0.1:2379"
 	testTimeout    = time.Second * 10
 
-	// defaults from etcdctl/ctlv3/ctl.go
-	defaultDialTimeout      = 2 * time.Second
-	defaultKeepAliveTime    = 2 * time.Second
-	defaultKeepAliveTimeOut = 6 * time.Second
+	// defaults from k8s.io/apiserver/pkg/storage/storagebackend/factory/etcd3.go
+	defaultDialTimeout      = 20 * time.Second
+	defaultKeepAliveTime    = 30 * time.Second
+	defaultKeepAliveTimeOut = 10 * time.Second
 )
 
 // Members contains a slice that holds all
