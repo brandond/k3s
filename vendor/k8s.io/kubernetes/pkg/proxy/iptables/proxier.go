@@ -399,6 +399,13 @@ var iptablesJumpChains = []iptablesJumpChain{
 	{utiliptables.TableNAT, kubePostroutingChain, utiliptables.ChainPostrouting, "kubernetes postrouting rules", nil},
 }
 
+var iptablesEnsureChains = []struct {
+	table utiliptables.Table
+	chain utiliptables.Chain
+}{
+	{utiliptables.TableNAT, KubeMarkDropChain},
+}
+
 var iptablesCleanupOnlyChains = []iptablesJumpChain{}
 
 // CleanupLeftovers removes all iptables rules and chains created by the Proxier
@@ -864,6 +871,14 @@ func (proxier *Proxier) syncProxyRules() {
 		)
 		if _, err := proxier.iptables.EnsureRule(utiliptables.Prepend, jump.table, jump.srcChain, args...); err != nil {
 			klog.Errorf("Failed to ensure that %s chain %s jumps to %s: %v", jump.table, jump.srcChain, jump.dstChain, err)
+			return
+		}
+	}
+
+	// ensure KUBE-MARK-DROP chain exist but do not change any rules
+	for _, ch := range iptablesEnsureChains {
+		if _, err := proxier.iptables.EnsureChain(ch.table, ch.chain); err != nil {
+			klog.Errorf("Failed to ensure that %s chain %s exists: %v", ch.table, ch.chain, err)
 			return
 		}
 	}
@@ -1610,11 +1625,13 @@ func (proxier *Proxier) syncProxyRules() {
 
 	// Finish housekeeping.
 	// TODO: these could be made more consistent.
+	klog.V(4).Infof("Deleting stale services IPs: %v", staleServices.UnsortedList())
 	for _, svcIP := range staleServices.UnsortedList() {
 		if err := conntrack.ClearEntriesForIP(proxier.exec, svcIP, v1.ProtocolUDP); err != nil {
 			klog.Errorf("Failed to delete stale service IP %s connections, error: %v", svcIP, err)
 		}
 	}
+	klog.V(4).Infof("Deleting stale endpoint connections: %v", endpointUpdateResult.StaleEndpoints)
 	proxier.deleteEndpointConnections(endpointUpdateResult.StaleEndpoints)
 }
 

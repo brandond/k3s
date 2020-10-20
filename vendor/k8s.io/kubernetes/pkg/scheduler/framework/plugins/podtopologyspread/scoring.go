@@ -24,8 +24,8 @@ import (
 
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/kubernetes/pkg/scheduler/framework"
 	pluginhelper "k8s.io/kubernetes/pkg/scheduler/framework/plugins/helper"
-	framework "k8s.io/kubernetes/pkg/scheduler/framework/v1alpha1"
 	"k8s.io/kubernetes/pkg/scheduler/internal/parallelize"
 )
 
@@ -64,7 +64,7 @@ func (pl *PodTopologySpread) initPreScoreState(s *preScoreState, pod *v1.Pod, fi
 			return fmt.Errorf("obtaining pod's soft topology spread constraints: %v", err)
 		}
 	} else {
-		s.Constraints, err = pl.defaultConstraints(pod, v1.ScheduleAnyway)
+		s.Constraints, err = pl.buildDefaultConstraints(pod, v1.ScheduleAnyway)
 		if err != nil {
 			return fmt.Errorf("setting default soft topology spread constraints: %v", err)
 		}
