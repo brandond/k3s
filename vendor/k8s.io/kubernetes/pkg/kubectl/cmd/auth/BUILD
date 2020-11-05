@@ -16,7 +16,6 @@ go_library(
         "//build/visible_to:pkg_kubectl_cmd_auth_CONSUMERS",
     ],
     deps = [
-        "//pkg/registry/rbac/reconciliation:go_default_library",
         "//staging/src/k8s.io/api/authorization/v1:go_default_library",
         "//staging/src/k8s.io/api/rbac/v1:go_default_library",
         "//staging/src/k8s.io/api/rbac/v1alpha1:go_default_library",
@@ -26,6 +25,7 @@ go_library(
         "//staging/src/k8s.io/apimachinery/pkg/runtime:go_default_library",
         "//staging/src/k8s.io/apimachinery/pkg/runtime/schema:go_default_library",
         "//staging/src/k8s.io/apimachinery/pkg/util/errors:go_default_library",
+        "//staging/src/k8s.io/apimachinery/pkg/util/sets:go_default_library",
         "//staging/src/k8s.io/cli-runtime/pkg/genericclioptions:go_default_library",
         "//staging/src/k8s.io/cli-runtime/pkg/printers:go_default_library",
         "//staging/src/k8s.io/cli-runtime/pkg/resource:go_default_library",
@@ -33,6 +33,7 @@ go_library(
         "//staging/src/k8s.io/client-go/kubernetes/typed/authorization/v1:go_default_library",
         "//staging/src/k8s.io/client-go/kubernetes/typed/core/v1:go_default_library",
         "//staging/src/k8s.io/client-go/kubernetes/typed/rbac/v1:go_default_library",
+        "//staging/src/k8s.io/component-helpers/auth/rbac/reconciliation:go_default_library",
         "//staging/src/k8s.io/kubectl/pkg/cmd/util:go_default_library",
         "//staging/src/k8s.io/kubectl/pkg/describe:go_default_library",
         "//staging/src/k8s.io/kubectl/pkg/scheme:go_default_library",

@@ -21,9 +21,8 @@ import (
 	"fmt"
 
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
-	v1helper "k8s.io/kubernetes/pkg/apis/core/v1/helper"
+	"k8s.io/component-helpers/scheduling/corev1"
 	"k8s.io/kubernetes/pkg/scheduler/framework"
 	pluginhelper "k8s.io/kubernetes/pkg/scheduler/framework/plugins/helper"
 )
@@ -88,12 +87,12 @@ func (pl *NodeAffinity) Score(ctx context.Context, state *framework.CycleState, 
 			}
 
 			// TODO: Avoid computing it for all nodes if this becomes a performance problem.
-			nodeSelector, err := v1helper.NodeSelectorRequirementsAsSelector(preferredSchedulingTerm.Preference.MatchExpressions)
+			matches, err := corev1.MatchNodeSelectorTerms(node, &v1.NodeSelector{NodeSelectorTerms: []v1.NodeSelectorTerm{preferredSchedulingTerm.Preference}})
 			if err != nil {
 				return 0, framework.AsStatus(err)
 			}
 
-			if nodeSelector.Matches(labels.Set(node.Labels)) {
+			if matches {
 				count += int64(preferredSchedulingTerm.Weight)
 			}
 		}

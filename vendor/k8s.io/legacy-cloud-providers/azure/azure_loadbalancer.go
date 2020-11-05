@@ -531,6 +531,10 @@ func (az *Cloud) findServiceIPAddress(ctx context.Context, clusterName string, s
 		return service.Spec.LoadBalancerIP, nil
 	}
 
+	if len(service.Status.LoadBalancer.Ingress) > 0 && len(service.Status.LoadBalancer.Ingress[0].IP) > 0 {
+		return service.Status.LoadBalancer.Ingress[0].IP, nil
+	}
+
 	_, lbStatus, existsLb, err := az.getServiceLoadBalancer(service, clusterName, nil, false)
 	if err != nil {
 		return "", err
@@ -664,9 +668,7 @@ func (az *Cloud) ensurePublicIPExists(service *v1.Service, pipName string, domai
 		klog.V(2).Infof("service(%s): pip(%s) - creating as ipv4 for clusterIP:%v", serviceName, *pip.Name, service.Spec.ClusterIP)
 	}
 
-	klog.V(2).Infof("ensurePublicIPExists for service(%s): pip(%s) - creating", serviceName, *pip.Name)
-
-	klog.V(10).Infof("CreateOrUpdatePIP(%s, %q): start", pipResourceGroup, *pip.Name)
+	klog.V(2).Infof("CreateOrUpdatePIP(%s, %q): start", pipResourceGroup, *pip.Name)
 	err = az.CreateOrUpdatePIP(service, pipResourceGroup, pip)
 	if err != nil {
 		klog.V(2).Infof("ensure(%s) abort backoff: pip(%s)", serviceName, *pip.Name)
@@ -834,9 +836,6 @@ func (az *Cloud) isFrontendIPChanged(clusterName string, config network.Frontend
 			return config.PrivateIPAllocationMethod == network.Static, nil
 		}
 		return config.PrivateIPAllocationMethod != network.Static || !strings.EqualFold(loadBalancerIP, to.String(config.PrivateIPAddress)), nil
-	}
-	if loadBalancerIP == "" {
-		return false, nil
 	}
 	pipName, _, err := az.determinePublicIPName(clusterName, service)
 	if err != nil {
@@ -1212,7 +1211,7 @@ func (az *Cloud) reconcileLoadBalancer(clusterName string, service *v1.Service, 
 					ID:                                      to.StringPtr(fmt.Sprintf(frontendIPConfigIDTemplate, az.SubscriptionID, az.ResourceGroup, *lb.Name, defaultLBFrontendIPConfigName)),
 					FrontendIPConfigurationPropertiesFormat: fipConfigurationProperties,
 				})
-			klog.Infof("reconcileLoadBalancer for service (%s)(%t): lb frontendconfig(%s) - adding", serviceName, wantLb, defaultLBFrontendIPConfigName)
+			klog.V(2).Infof("reconcileLoadBalancer for service (%s)(%t): lb frontendconfig(%s) - adding", serviceName, wantLb, defaultLBFrontendIPConfigName)
 			dirtyConfigs = true
 		}
 	}
@@ -1610,7 +1609,7 @@ func (az *Cloud) reconcileSecurityGroup(clusterName string, service *v1.Service,
 	if ports == nil {
 		if useSharedSecurityRule(service) {
 			klog.V(2).Infof("Attempting to reconcile security group for service %s, but service uses shared rule and we don't know which port it's for", service.Name)
-			return nil, fmt.Errorf("No port info for reconciling shared rule for service %s", service.Name)
+			return nil, fmt.Errorf("no port info for reconciling shared rule for service %s", service.Name)
 		}
 		ports = []v1.ServicePort{}
 	}
@@ -1622,7 +1621,7 @@ func (az *Cloud) reconcileSecurityGroup(clusterName string, service *v1.Service,
 
 	destinationIPAddress := ""
 	if wantLb && lbIP == nil {
-		return nil, fmt.Errorf("No load balancer IP for setting up security rules for service %s", service.Name)
+		return nil, fmt.Errorf("no load balancer IP for setting up security rules for service %s", service.Name)
 	}
 	if lbIP != nil {
 		destinationIPAddress = *lbIP
@@ -1725,17 +1724,17 @@ func (az *Cloud) reconcileSecurityGroup(clusterName string, service *v1.Service,
 				sharedIndex, sharedRule, sharedRuleFound := findSecurityRuleByName(updatedRules, sharedRuleName)
 				if !sharedRuleFound {
 					klog.V(4).Infof("Expected to find shared rule %s for service %s being deleted, but did not", sharedRuleName, service.Name)
-					return nil, fmt.Errorf("Expected to find shared rule %s for service %s being deleted, but did not", sharedRuleName, service.Name)
+					return nil, fmt.Errorf("expected to find shared rule %s for service %s being deleted, but did not", sharedRuleName, service.Name)
 				}
 				if sharedRule.DestinationAddressPrefixes == nil {
 					klog.V(4).Infof("Expected to have array of destinations in shared rule for service %s being deleted, but did not", service.Name)
-					return nil, fmt.Errorf("Expected to have array of destinations in shared rule for service %s being deleted, but did not", service.Name)
+					return nil, fmt.Errorf("expected to have array of destinations in shared rule for service %s being deleted, but did not", service.Name)
 				}
 				existingPrefixes := *sharedRule.DestinationAddressPrefixes
 				addressIndex, found := findIndex(existingPrefixes, destinationIPAddress)
 				if !found {
 					klog.V(4).Infof("Expected to find destination address %s in shared rule %s for service %s being deleted, but did not", destinationIPAddress, sharedRuleName, service.Name)
-					return nil, fmt.Errorf("Expected to find destination address %s in shared rule %s for service %s being deleted, but did not", destinationIPAddress, sharedRuleName, service.Name)
+					return nil, fmt.Errorf("expected to find destination address %s in shared rule %s for service %s being deleted, but did not", destinationIPAddress, sharedRuleName, service.Name)
 				}
 				if len(existingPrefixes) == 1 {
 					updatedRules = append(updatedRules[:sharedIndex], updatedRules[sharedIndex+1:]...)
@@ -2283,7 +2282,7 @@ func (az *Cloud) isBackendPoolPreConfigured(service *v1.Service) bool {
 	if az.PreConfiguredBackendPoolLoadBalancerTypes == PreConfiguredBackendPoolLoadBalancerTypesAll {
 		preConfigured = true
 	}
-	if (az.PreConfiguredBackendPoolLoadBalancerTypes == PreConfiguredBackendPoolLoadBalancerTypesInteral) && isInternal {
+	if (az.PreConfiguredBackendPoolLoadBalancerTypes == PreConfiguredBackendPoolLoadBalancerTypesInternal) && isInternal {
 		preConfigured = true
 	}
 	if (az.PreConfiguredBackendPoolLoadBalancerTypes == PreConfiguredBackendPoolLoadBalancerTypesExternal) && !isInternal {

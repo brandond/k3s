@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"sync"
 	"sync/atomic"
 
 	fcv1a1 "k8s.io/api/flowcontrol/v1alpha1"
@@ -34,11 +35,6 @@ import (
 type priorityAndFairnessKeyType int
 
 const priorityAndFairnessKey priorityAndFairnessKeyType = iota
-
-const (
-	responseHeaderMatchedPriorityLevelConfigurationUID = "X-Kubernetes-PF-PriorityLevel-UID"
-	responseHeaderMatchedFlowSchemaUID                 = "X-Kubernetes-PF-FlowSchema-UID"
-)
 
 // PriorityAndFairnessClassification identifies the results of
 // classification for API Priority and Fairness
@@ -62,6 +58,9 @@ var waitingMark = &requestWatermark{
 	mutatingObserver: fcmetrics.ReadWriteConcurrencyObserverPairGenerator.Generate(1, 1, []string{epmetrics.MutatingKind}).RequestsWaiting,
 }
 
+// apfStartOnce is used to avoid sharing one-time mutex with maxinflight handler
+var apfStartOnce sync.Once
+
 var atomicMutatingExecuting, atomicReadOnlyExecuting int32
 var atomicMutatingWaiting, atomicReadOnlyWaiting int32
 
@@ -78,6 +77,8 @@ func WithPriorityAndFairness(
 	}
 	startOnce.Do(func() {
 		startRecordingUsage(watermark)
+	})
+	apfStartOnce.Do(func() {
 		startRecordingUsage(waitingMark)
 	})
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -131,8 +132,8 @@ func WithPriorityAndFairness(
 			served = true
 			innerCtx := context.WithValue(ctx, priorityAndFairnessKey, classification)
 			innerReq := r.Clone(innerCtx)
-			w.Header().Set(responseHeaderMatchedPriorityLevelConfigurationUID, string(classification.PriorityLevelUID))
-			w.Header().Set(responseHeaderMatchedFlowSchemaUID, string(classification.FlowSchemaUID))
+			w.Header().Set(fcv1a1.ResponseHeaderMatchedPriorityLevelConfigurationUID, string(classification.PriorityLevelUID))
+			w.Header().Set(fcv1a1.ResponseHeaderMatchedFlowSchemaUID, string(classification.FlowSchemaUID))
 			handler.ServeHTTP(w, innerReq)
 		}
 		digest := utilflowcontrol.RequestDigest{RequestInfo: requestInfo, User: user}
@@ -144,6 +145,11 @@ func WithPriorityAndFairness(
 			}
 		}, execute)
 		if !served {
+			if isMutatingRequest {
+				epmetrics.DroppedRequests.WithLabelValues(epmetrics.MutatingKind).Inc()
+			} else {
+				epmetrics.DroppedRequests.WithLabelValues(epmetrics.ReadOnlyKind).Inc()
+			}
 			epmetrics.RecordRequestTermination(r, requestInfo, epmetrics.APIServerComponent, http.StatusTooManyRequests)
 			tooManyRequests(r, w)
 		}
