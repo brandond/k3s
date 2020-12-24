@@ -24,6 +24,7 @@ import (
 	"github.com/rancher/k3s/pkg/daemons/config"
 	"github.com/rancher/k3s/pkg/daemons/executor"
 	"github.com/rancher/k3s/pkg/version"
+	controllerv1 "github.com/rancher/wrangler-api/pkg/generated/controllers/core/v1"
 	"github.com/robfig/cron/v3"
 	"github.com/sirupsen/logrus"
 	etcd "go.etcd.io/etcd/clientv3"
@@ -206,8 +207,10 @@ func (e *ETCD) Start(ctx context.Context, clientAccessInfo *clientaccess.Info) e
 		return errors.Wrapf(err, "configuration validation failed")
 	}
 
+	nodes := e.config.Runtime.Core.Core().V1().Node()
+
 	e.config.Runtime.ClusterControllerStart = func(ctx context.Context) error {
-		Register(ctx, e, e.config.Runtime.Core.Core().V1().Node())
+		Register(ctx, e, nodes)
 		return nil
 	}
 
@@ -216,7 +219,7 @@ func (e *ETCD) Start(ctx context.Context, clientAccessInfo *clientaccess.Info) e
 		e.cron.Start()
 	}
 
-	go e.manageLearners(ctx)
+	go e.manageMembers(ctx, nodes)
 
 	if existingCluster {
 		opt, err := executor.CurrentETCDOptions()
@@ -536,10 +539,10 @@ func (e *ETCD) removePeer(ctx context.Context, id, address string) error {
 	return nil
 }
 
-// manageLearners monitors the etcd cluster to ensure that learners are making progress towards
-// being promoted to full voting member. The checks only run on the cluster member that is
-// the etcd leader.
-func (e *ETCD) manageLearners(ctx context.Context) error {
+// manageMambers monitors the etcd cluster to ensure that learners are making progress towards
+// being promoted to full voting member, and that all cluster members are present in the Kubernetes
+// cluster. The checks only run on the cluster member that is the etcd leader.
+func (e *ETCD) manageMembers(ctx context.Context, nodes controllerv1.NodeController) error {
 	t := time.NewTicker(manageTickerTime)
 	defer t.Stop()
 
@@ -563,16 +566,19 @@ func (e *ETCD) manageLearners(ctx context.Context) error {
 
 		members, err := e.client.MemberList(ctx)
 		if err != nil {
-			logrus.Errorf("Failed to get etcd members for learner management: %v", err)
+			logrus.Errorf("Failed to get etcd members for cluster management: %v", err)
 			continue
 		}
 
 		for _, member := range members.Members {
 			if member.IsLearner {
 				if err := e.trackLearnerProgress(ctx, progress, member); err != nil {
-					logrus.Errorf("Failed to track learner progress towards promotion: %v", err)
+					logrus.Errorf("Failed to track etcd learner progress towards promotion: %v", err)
 				}
-				break
+			} else {
+				if err := e.validateMemberStatus(ctx, nodes, member); err != nil {
+					logrus.Errorf("Failed to validate etcd cluster membership: %v", err)
+				}
 			}
 		}
 	}
@@ -664,6 +670,19 @@ func (e *ETCD) setLearnerProgress(ctx context.Context, status *learnerProgress) 
 
 	_, err := e.client.Put(ctx, learnerProgressKey, w.String())
 	return err
+}
+
+// validateMemberStatus confirms that the cluster member is a member of the Kubernetes cluster,
+// and the names match. If the member cannot be confirmed as a member of the etcd cluster, it is
+// evicted from the cluster.
+func (e *ETCD) validateMemberStatus(ctx context.Context, nodes controllerv1.NodeController, member *etcdserverpb.Member) error {
+	nodeList, err := nodes.List(metav1.ListOptions{LabelSelector: etcdRole + "=true"})
+	if err != nil {
+		return err
+	}
+	nodeFound := false
+	for _, node : range nodeList.Items {}
+	return nil
 }
 
 // clientURLs returns a list of all non-learner etcd cluster member client access URLs

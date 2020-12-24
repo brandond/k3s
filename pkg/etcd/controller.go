@@ -20,6 +20,13 @@ const (
 
 type NodeControllerGetter func() controllerv1.NodeController
 
+type handler struct {
+	etcd           *ETCD
+	nodeController controllerv1.NodeController
+	ctx            context.Context
+}
+
+// Register adds callbacks for node events.
 func Register(ctx context.Context, etcd *ETCD, nodes controllerv1.NodeController) {
 	h := &handler{
 		etcd:           etcd,
@@ -27,15 +34,10 @@ func Register(ctx context.Context, etcd *ETCD, nodes controllerv1.NodeController
 		ctx:            ctx,
 	}
 	nodes.OnChange(ctx, "managed-etcd-controller", h.sync)
-	nodes.OnRemove(ctx, "managed-etcd-controller", h.onRemove)
 }
 
-type handler struct {
-	etcd           *ETCD
-	nodeController controllerv1.NodeController
-	ctx            context.Context
-}
-
+// sync is the callback for node change events. If the changed node
+// is the local node, it calls handlSelf to ensure annotations and labels.
 func (h *handler) sync(key string, node *v1.Node) (*v1.Node, error) {
 	if node == nil {
 		return nil, nil
@@ -55,6 +57,8 @@ func (h *handler) sync(key string, node *v1.Node) (*v1.Node, error) {
 	return node, nil
 }
 
+// handleSelf is called if the changed node is the local node.
+// It ensures that the etcd annotations and role labels are present.
 func (h *handler) handleSelf(node *v1.Node) (*v1.Node, error) {
 	if node.Annotations[nodeID] == h.etcd.name &&
 		node.Annotations[nodeAddress] == h.etcd.address &&
@@ -74,18 +78,4 @@ func (h *handler) handleSelf(node *v1.Node) (*v1.Node, error) {
 	node.Labels[controlPlane] = "true"
 
 	return h.nodeController.Update(node)
-}
-
-func (h *handler) onRemove(key string, node *v1.Node) (*v1.Node, error) {
-	if _, ok := node.Labels[etcdRole]; !ok {
-		return node, nil
-	}
-
-	id := node.Annotations[nodeID]
-	address := node.Annotations[nodeAddress]
-	if address == "" {
-		return node, nil
-	}
-
-	return node, h.etcd.removePeer(h.ctx, id, address)
 }
