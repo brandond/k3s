@@ -2,6 +2,7 @@ package etcdsnapshot
 
 import (
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
 
@@ -9,9 +10,9 @@ import (
 	"github.com/rancher/k3s/pkg/cli/cmds"
 	"github.com/rancher/k3s/pkg/cluster"
 	"github.com/rancher/k3s/pkg/daemons/config"
+	"github.com/rancher/k3s/pkg/etcd"
 	"github.com/rancher/k3s/pkg/server"
 	"github.com/rancher/wrangler/pkg/signals"
-	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 )
 
@@ -45,15 +46,21 @@ func run(app *cli.Context, cfg *cmds.Server) error {
 
 	ctx := signals.SetupSignalHandler(context.Background())
 
-	cluster := cluster.New(&serverConfig.ControlConfig)
+	initialized, err := etcd.NewETCD().IsInitialized(ctx, serverConfig.ControlConfig)
+	if err != nil {
+		return err
+	}
+	if !initialized {
+		return errors.New("managed etcd database has not been initialized")
+	}
 
+	cluster := cluster.New(&serverConfig.ControlConfig)
 	if err := cluster.Bootstrap(ctx); err != nil {
 		return err
 	}
 
 	if err := cluster.Snapshot(ctx, &serverConfig.ControlConfig); err != nil {
-		logrus.Error(err)
-		os.Exit(1)
+		return err
 	}
 
 	return nil
