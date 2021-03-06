@@ -17,6 +17,7 @@ import (
 // address, the function will also remove the controlplane and master role labels if
 // they exist on the node
 func setETCDLabelsAndAnnotations(ctx context.Context, config *Config) error {
+	logrus.Debugf("Running setETCDLabelsAndAnnotations")
 	t := time.NewTicker(5 * time.Second)
 	defer t.Stop()
 	for range t.C {

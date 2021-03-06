@@ -65,7 +65,6 @@ func StartServer(ctx context.Context, config *Config) error {
 
 	config.ControlConfig.Runtime.Handler = router(ctx, config)
 
-	logrus.Infof("StartServer: DisableApiServer=%t", config.ControlConfig.DisableAPIServer)
 	if config.ControlConfig.DisableAPIServer {
 		go setETCDLabelsAndAnnotations(ctx, config)
 	} else {
@@ -96,6 +95,7 @@ func StartServer(ctx context.Context, config *Config) error {
 }
 
 func startOnAPIServerReady(ctx context.Context, config *Config) {
+	logrus.Debugf("Running startOnAPIServerReady")
 	select {
 	case <-ctx.Done():
 		return
@@ -107,6 +107,7 @@ func startOnAPIServerReady(ctx context.Context, config *Config) {
 }
 
 func runControllers(ctx context.Context, config *Config) error {
+	logrus.Debugf("Running runControllers")
 	controlConfig := &config.ControlConfig
 
 	sc, err := newContext(ctx, controlConfig.Runtime.KubeConfigAdmin)
@@ -164,6 +165,7 @@ func runControllers(ctx context.Context, config *Config) error {
 }
 
 func coreControllers(ctx context.Context, sc *Context, config *Config) error {
+	logrus.Debugf("Running coreControllers")
 	if err := node.Register(ctx,
 		!config.ControlConfig.Skips["coredns"],
 		sc.Core.Core().V1().Secret(),
