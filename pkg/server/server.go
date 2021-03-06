@@ -65,6 +65,7 @@ func StartServer(ctx context.Context, config *Config) error {
 
 	config.ControlConfig.Runtime.Handler = router(ctx, config)
 
+	logrus.Infof("StartServer: DisableApiServer=%t", config.ControlConfig.DisableAPIServer)
 	if config.ControlConfig.DisableAPIServer {
 		go setETCDLabelsAndAnnotations(ctx, config)
 	} else {
