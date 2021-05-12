@@ -92,9 +92,11 @@ func run(ctx context.Context, cfg cmds.Agent, proxy proxy.Proxy) error {
 		return err
 	}
 
+	logrus.Debugf("nodeConfig before bootstrap: %#v", nodeConfig)
 	if err := executor.Bootstrap(ctx, nodeConfig, cfg); err != nil {
 		return err
 	}
+	logrus.Debugf("nodeConfig after bootstrap: %#v", nodeConfig)
 
 	if !nodeConfig.NoFlannel {
 		if err := flannel.Prepare(ctx, nodeConfig); err != nil {
