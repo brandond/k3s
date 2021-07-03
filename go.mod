@@ -21,12 +21,14 @@ replace (
 	github.com/docker/libnetwork => github.com/docker/libnetwork v0.8.0-dev.2.0.20190624125649-f0e46a78ea34
 	github.com/golang/protobuf => github.com/golang/protobuf v1.5.2
 	github.com/juju/errors => github.com/k3s-io/nocode v0.0.0-20200630202308-cb097102c09f
+	github.com/k3s-io/helm-controller => github.com/brandond/helm-controller v0.10.2-0.20210703081445-f24cee84ff2d
 	github.com/k3s-io/kine => github.com/brandond/kine v0.6.3-0.20210702212427-931b86db8df9
 	github.com/kubernetes-sigs/cri-tools => github.com/k3s-io/cri-tools v1.21.0-k3s1
 	github.com/matryer/moq => github.com/rancher/moq v0.0.0-20190404221404-ee5226d43009
 	// LOOK TO scripts/download FOR THE VERSION OF runc THAT WE ARE BUILDING/SHIPPING
 	github.com/opencontainers/runc => github.com/opencontainers/runc v1.0.0-rc95
 	github.com/opencontainers/runtime-spec => github.com/opencontainers/runtime-spec v1.0.3-0.20210316141917-a8c4a9ee0f6b
+	github.com/rancher/dynamiclistener => github.com/brandond/dynamiclistener v0.2.6-0.20210703083050-6a38a589b6cd
 	github.com/rancher/k3s/pkg/data => ./pkg/data
 	go.etcd.io/etcd/api/v3 => github.com/brandond/etcd/api/v3 v3.5.1-0.20210702231655-bf93260f3666
 	go.etcd.io/etcd/client/v3 => github.com/brandond/etcd/client/v3 v3.5.1-0.20210702231655-bf93260f3666
@@ -104,10 +106,10 @@ require (
 	github.com/pierrec/lz4 v2.6.0+incompatible
 	github.com/pkg/errors v0.9.1
 	github.com/rancher/dynamiclistener v0.2.3
+	github.com/rancher/lasso v0.0.0-20210616224652-fc3ebd901c08
 	github.com/rancher/remotedialer v0.2.0
 	github.com/rancher/wharfie v0.3.4
-	github.com/rancher/wrangler v0.6.2
-	github.com/rancher/wrangler-api v0.6.0
+	github.com/rancher/wrangler v0.8.3
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/rootless-containers/rootlesskit v0.14.0
 	github.com/sirupsen/logrus v1.8.1
@@ -119,7 +121,7 @@ require (
 	go.etcd.io/etcd/client/v3 v3.5.0
 	go.etcd.io/etcd/etcdutl/v3 v3.5.0
 	go.etcd.io/etcd/server/v3 v3.5.0
-	golang.org/x/crypto v0.0.0-20210220033148-5ea612d1eb83
+	golang.org/x/crypto v0.0.0-20210322153248-0c34fe9e7dc2
 	golang.org/x/net v0.0.0-20210520170846-37e1c6afe023
 	golang.org/x/sys v0.0.0-20210616094352-59db8d763f22
 	google.golang.org/grpc v1.38.0
