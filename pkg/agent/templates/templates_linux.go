@@ -19,6 +19,8 @@ const ContainerdConfigTemplate = `
 {{- if .DisableCgroup}}
   disable_cgroup = true
 {{end}}
+  enable_unprivileged_ports = true
+  enable_unprivileged_icmp = true
 {{- if .IsRunningInUserNS }}
   disable_apparmor = true
   restrict_oom_score_adj = true
