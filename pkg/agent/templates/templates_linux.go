@@ -121,6 +121,9 @@ enable_keychain = true
 [plugins.cri.containerd.runtimes."{{$k}}".options]
   BinaryName = "{{$v.BinaryName}}"
 {{end}}
+
+[plugins."io.containerd.grpc.v1.cri".cni]
+  ip_pref = "cni"
 `
 
 func ParseTemplateFromConfig(templateBuffer string, config interface{}) (string, error) {
