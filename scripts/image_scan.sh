@@ -9,8 +9,8 @@ fi
 
 ARCH=$2
 
-# skipping image scan for s390x since trivy doesn't support s390x arch yet
-if [ "${ARCH}" == "s390x" ]; then
+# skipping image scan for s390x and riscv64 since trivy doesn't support these archs yet
+if [ "${ARCH}" == "s390x" ] || [ "${ARCH}" == "riscv64" ]; then
     exit 0
 fi
 
