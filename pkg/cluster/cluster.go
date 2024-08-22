@@ -11,7 +11,9 @@ import (
 	"github.com/k3s-io/k3s/pkg/cluster/managed"
 	"github.com/k3s-io/k3s/pkg/daemons/config"
 	"github.com/k3s-io/k3s/pkg/etcd"
+	"github.com/k3s-io/k3s/pkg/metrics"
 	"github.com/k3s-io/kine/pkg/endpoint"
+	kinemetrics "github.com/k3s-io/kine/pkg/metrics"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -168,7 +170,14 @@ func (c *Cluster) startStorage(ctx context.Context, bootstrap bool) error {
 	// Persist the returned etcd configuration. We decide if we're doing leader election for embedded controllers
 	// based on what the kine wrapper tells us about the datastore. Single-node datastores like sqlite don't require
 	// leader election, while basically all others (etcd, external database, etc) do since they allow multiple servers.
-	c.config.Runtime.EtcdConfig = etcdConfig
+	c.config.Runtime.EtcdConfig = *etcdConfig
+
+	// Register kine metrics, if not using etcd pass-through
+	if etcdConfig.Driver != endpoint.ETCDBackend {
+		kinemetrics.DefaultRegisterer = metrics.DefaultRegisterer
+		kinemetrics.DefaultGatherer = metrics.DefaultGatherer
+		kinemetrics.Register()
+	}
 
 	// after the bootstrap we need to set the args for api-server with kine in unixs or just set the
 	// values if the datastoreTLS is not enabled

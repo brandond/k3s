@@ -307,6 +307,8 @@ github.com/blang/semver/v4 v4.0.0/go.mod h1:IbckMUScFkM3pff0VJDNKRiT6TG/YpiHIM2y
 github.com/boombuler/barcode v1.0.0/go.mod h1:paBWMcWSl3LHKBqUq+rly7CNSldXjb2rDl3JlRe0mD8=
 github.com/boombuler/barcode v1.0.1/go.mod h1:paBWMcWSl3LHKBqUq+rly7CNSldXjb2rDl3JlRe0mD8=
 github.com/bradfitz/go-smtpd v0.0.0-20170404230938-deb6d6237625/go.mod h1:HYsPBTaaSFSlLx/70C2HPIMNZpVV8+vt/A+FMnYP11g=
+github.com/brandond/kine v0.12.1-0.20240822024041-96a29a352065 h1:nCFKFeux+mjuWGYtLfXToUmI5Zy3id24KZS64lKcwqQ=
+github.com/brandond/kine v0.12.1-0.20240822024041-96a29a352065/go.mod h1:L4x3qotFebVh1ZVzYwFVL5PPfqw2sRJTjDTIeViO70Y=
 github.com/bronze1man/goStrongswanVici v0.0.0-20221114103242-3f6dc524986c h1:JY0NMX6F455gODxoTSesio3OmhM8HEniyFMWgpHvTY0=
 github.com/bronze1man/goStrongswanVici v0.0.0-20221114103242-3f6dc524986c/go.mod h1:fWUtBEPt2yjrr3WFhOqvajM8JSEU8bEeBcoeSCsKRpc=
 github.com/buger/jsonparser v0.0.0-20181115193947-bf1c66bbce23/go.mod h1:bbYlZJ7hK1yFx9hf58LP0zeX7UjIGs20ufpu3evjr+s=
@@ -935,8 +937,6 @@ github.com/k3s-io/etcd/server/v3 v3.5.13-k3s1 h1:Pqcxkg7V60c26ZpHoekP9QoUdLuduxF
 github.com/k3s-io/etcd/server/v3 v3.5.13-k3s1/go.mod h1:K/8nbsGupHqmr5MkgaZpLlH1QdX1pcNQLAkODy44XcQ=
 github.com/k3s-io/helm-controller v0.16.3 h1:zjC0PsQF2Pf/LM1Cbfz/2dV6ee6XtCAWyG1PO96m7ow=
 github.com/k3s-io/helm-controller v0.16.3/go.mod h1:AcSxEhOIUgeVvBTnJOAwcezBZXtYew/RhKwO5xp3RlM=
-github.com/k3s-io/kine v0.11.11 h1:f1DhpGNjCDVd1HFWPbeA824YP7MtsrKgstoJ5M0SRgs=
-github.com/k3s-io/kine v0.11.11/go.mod h1:L4x3qotFebVh1ZVzYwFVL5PPfqw2sRJTjDTIeViO70Y=
 github.com/k3s-io/klog/v2 v2.120.1-k3s1 h1:7twAHPFpZA21KdMnMNnj68STQMPldAxF2Zsaol57dxw=
 github.com/k3s-io/klog/v2 v2.120.1-k3s1/go.mod h1:3Jpz1GvMt720eyJH1ckRHK1EDfpxISzJ7I9OYgaDtPE=
 github.com/k3s-io/kube-router/v2 v2.1.2 h1:/eLfIsELLsqqRW1skIJ2qe7bWL6IZZ9Hg3IniIgObXo=
