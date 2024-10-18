@@ -292,11 +292,16 @@ func extract(dataDir string) (string, error) {
 	if err := os.MkdirAll(cniPath, 0755); err != nil {
 		return "", err
 	}
+	// Create symlink that points at the cni multicall binary itself
+	os.Remove(filepath.Join(cniPath, "cni"))
 	if err := os.Symlink(cniBin, filepath.Join(cniPath, "cni")); err != nil {
 		return "", err
 	}
 
 	// Find symlinks that point to the cni multicall binary, and clone them in the stable CNI bin dir.
+	// Non-symlink plugins in the stable CNI bin dir will not be overwritten, to allow users to replace our
+	// CNI plugins with their own versions if they want. Note that the cni multicall binary itself is always
+	// symlinked into the stable bin dir and should not be replaced.
 	ents, err := os.ReadDir(filepath.Join(dir, "bin"))
 	if err != nil {
 		return "", err
@@ -304,7 +309,20 @@ func extract(dataDir string) (string, error) {
 	for _, ent := range ents {
 		if info, err := ent.Info(); err == nil && info.Mode()&fs.ModeSymlink != 0 {
 			if target, err := os.Readlink(filepath.Join(dir, "bin", ent.Name())); err == nil && target == "cni" {
-				if err := os.Symlink(cniBin, filepath.Join(cniPath, ent.Name())); err != nil {
+				src := filepath.Join(cniPath, ent.Name())
+				// Check if plugin already exists in stable CNI bin dir
+				if info, err := os.Stat(src); err == nil {
+					if info.Mode()&fs.ModeSymlink != 0 {
+						// Exists and is a symlink, remove it so we can create a new symlink for the new bin.
+						os.Remove(src)
+					} else {
+						// Not a symlink, leave it alone
+						logrus.Debugf("Not replacing non-symlink CNI plugin %s", ent.Name())
+						continue
+					}
+				}
+				logrus.Debugf("Symlinking CNI plugin %s -> %s", ent.Name(), cniBin)
+				if err := os.Symlink(cniBin, src); err != nil {
 					return "", err
 				}
 			}
