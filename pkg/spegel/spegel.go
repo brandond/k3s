@@ -94,8 +94,8 @@ type Config struct {
 
 // These values are not currently configurable
 const (
-	resolveRetries    = 0
-	resolveTimeout    = time.Second * 5
+	resolveRetries    = 3
+	resolveTimeout    = time.Millisecond * 20
 	registryNamespace = "k8s.io"
 	defaultRouterPort = "5001"
 )
