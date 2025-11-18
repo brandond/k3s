@@ -29,6 +29,7 @@ import (
 
 // explicit interface checks
 var _ routing.Bootstrapper = &selfBootstrapper{}
+var _ routing.Bootstrapper = &notSelfBootstrapper{}
 var _ routing.Bootstrapper = &agentBootstrapper{}
 var _ routing.Bootstrapper = &serverBootstrapper{}
 var _ routing.Bootstrapper = &chainingBootstrapper{}
@@ -43,15 +44,47 @@ func NewSelfBootstrapper() routing.Bootstrapper {
 }
 
 func (s *selfBootstrapper) Run(ctx context.Context, id peer.AddrInfo) error {
+	logrus.Debugf("selfBootstrapper: Run(id=%s)", id)
 	s.id = &id
 	return waitForDone(ctx)
 }
 
 func (s *selfBootstrapper) Get(ctx context.Context) ([]peer.AddrInfo, error) {
+	logrus.Debugf("selfBootstrapper: Get()")
 	if s.id == nil {
 		return nil, errors.New("p2p peer not ready")
 	}
 	return []peer.AddrInfo{*s.id}, nil
+}
+
+type notSelfBootstrapper struct {
+	id *peer.AddrInfo
+	b  routing.Bootstrapper
+}
+
+// NewNotSelfBootstrapper wraps an existing bootstrapper,
+// and will never return a list of peers containing only itself.
+// This is best used to prevent the spegel router from considering
+// itself as "Ready" when it has no peers.
+func NewNotSelfBootstrapper(b routing.Bootstrapper) routing.Bootstrapper {
+	return &notSelfBootstrapper{
+		b: b,
+	}
+}
+
+func (ns *notSelfBootstrapper) Run(ctx context.Context, id peer.AddrInfo) error {
+	logrus.Debugf("notSelfBootstrapper: Run(id=%s)", id)
+	ns.id = &id
+	return ns.b.Run(ctx, id)
+}
+
+func (ns *notSelfBootstrapper) Get(ctx context.Context) ([]peer.AddrInfo, error) {
+	logrus.Debugf("notSelfBootstrapper: Get()")
+	peers, err := ns.b.Get(ctx)
+	if err == nil && len(peers) == 1 && ns.id != nil && peers[0].ID == ns.id.ID {
+		return nil, errors.New("skipping bootstrap peer that is same as host")
+	}
+	return peers, err
 }
 
 type agentBootstrapper struct {
@@ -75,6 +108,7 @@ func NewAgentBootstrapper(server, token, dataDir string) routing.Bootstrapper {
 }
 
 func (c *agentBootstrapper) Run(ctx context.Context, id peer.AddrInfo) error {
+	logrus.Debugf("agentBootstrapper: Run(id=%s) server=%s token=%s", id, c.server, c.token)
 	if c.server != "" && c.token != "" {
 		withCert := clientaccess.WithClientCertificate(c.clientCert, c.clientKey)
 		info, err := clientaccess.ParseAndValidateToken(c.server, c.token, withCert)
@@ -125,6 +159,7 @@ func (c *agentBootstrapper) Run(ctx context.Context, id peer.AddrInfo) error {
 }
 
 func (c *agentBootstrapper) Get(ctx context.Context) ([]peer.AddrInfo, error) {
+	logrus.Debugf("agentBootstrapper: Get()")
 	if c.server == "" || c.token == "" {
 		return nil, errors.New("cannot get addresses without server and token")
 	}
@@ -165,11 +200,13 @@ func NewServerBootstrapper(controlConfig *config.Control) routing.Bootstrapper {
 	}
 }
 
-func (s *serverBootstrapper) Run(ctx context.Context, _ peer.AddrInfo) error {
+func (s *serverBootstrapper) Run(ctx context.Context, id peer.AddrInfo) error {
+	logrus.Debugf("serverBootstrapper: Run(id=%s)", id)
 	return waitForDone(ctx)
 }
 
 func (s *serverBootstrapper) Get(ctx context.Context) ([]peer.AddrInfo, error) {
+	logrus.Debugf("serverBootstrapper: Get()")
 	if s.controlConfig.Runtime.Core == nil {
 		return nil, util.ErrCoreNotReady
 	}
@@ -231,6 +268,7 @@ func NewChainingBootstrapper(bootstrappers ...routing.Bootstrapper) routing.Boot
 }
 
 func (c *chainingBootstrapper) Run(ctx context.Context, id peer.AddrInfo) error {
+	logrus.Debugf("chainingBootstrapper: Run(id=%s)", id)
 	eg, ctx := errgroup.WithContext(ctx)
 	for i := range c.bootstrappers {
 		b := c.bootstrappers[i]
@@ -242,6 +280,7 @@ func (c *chainingBootstrapper) Run(ctx context.Context, id peer.AddrInfo) error 
 }
 
 func (c *chainingBootstrapper) Get(ctx context.Context) ([]peer.AddrInfo, error) {
+	logrus.Debugf("chainingBootstrapper: Get()")
 	errs := merr.Errors{}
 	for i := range c.bootstrappers {
 		b := c.bootstrappers[i]
