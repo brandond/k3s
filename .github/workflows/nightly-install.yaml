@@ -124,6 +124,9 @@ jobs:
         with:
           version: type=image,tag=29
           set-host: true
+      - name: Set up Containerd
+        run: |
+          echo CONTAINERD_ADDRESS=$(docker info -f '{{.Containerd.Address}}') >> "$GITHUB_ENV"
       - name: Install Go
         uses: ./.github/actions/setup-go
       - name: Load and set K3s image

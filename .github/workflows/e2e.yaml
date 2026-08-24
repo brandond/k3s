@@ -81,6 +81,9 @@ jobs:
           version: type=image,tag=29
           daemon-config: '{"features":{"containerd-snapshotter":true}}'
           set-host: true
+      - name: Set up Containerd
+        run: |
+          echo CONTAINERD_ADDRESS=$(docker info -f '{{.Containerd.Address}}') >> "$GITHUB_ENV"
       - name: Set up vagrant and libvirt
         uses: ./.github/actions/vagrant-setup
       - name: Vagrant Box R/W Cache
@@ -258,6 +261,9 @@ jobs:
         version: type=image,tag=29
         daemon-config: '{"features":{"containerd-snapshotter":true}}'
         set-host: true
+    - name: Set up Containerd
+      run: |
+        echo CONTAINERD_ADDRESS=$(docker info -f '{{.Containerd.Address}}') >> "$GITHUB_ENV"
     - name: Load and set K3s image
       run: |
         if [ ${{ matrix.arch }} = "arm64" ]; then
@@ -313,6 +319,9 @@ jobs:
       with:
         version: type=image,tag=29
         set-host: true
+    - name: Set up Containerd
+      run: |
+        echo CONTAINERD_ADDRESS=$(docker info -f '{{.Containerd.Address}}') >> "$GITHUB_ENV"
     - name: "Download K3s image"
       uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
       with:
